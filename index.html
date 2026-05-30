@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MoJones</title>
+  <meta name="description" content="MoJones — Blues / Soul / Southern Rock from St. Louis. To book, call Steve at (636) 456-7426 or email dave@mojones.live." />
+  <meta name="theme-color" content="#110d0b" />
+
+  <!-- Social preview -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="MoJones" />
+  <meta property="og:description" content="To book call Steve at (636) 456-7426 or email dave@mojones.live" />
+  <meta property="og:image" content="assets/band.jpg" />
+  <meta property="og:url" content="https://mojones.live/" />
+
+  <!-- Favicon (inline so there's no extra request / 404) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23110d0b'/><text x='50' y='68' font-size='54' font-family='Arial Black,Arial' font-weight='900' text-anchor='middle' fill='%23e0a23b'>M</text></svg>" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ============================ HERO ============================ -->
+  <header class="hero">
+    <h1 class="wordmark">MoJones</h1>
+    <p class="tagline">Blues &middot; Soul &middot; Southern Rock &middot; St. Louis</p>
+
+    <div class="photo-frame">
+      <img src="assets/band.jpg" alt="MoJones band — four members" />
+    </div>
+
+    <a class="scroll-cue" href="#shows">
+      Upcoming Shows
+      <span class="chev">&#x2193;</span>
+    </a>
+  </header>
+
+  <!-- =========================== SHOWS =========================== -->
+  <main>
+    <section class="shows" id="shows">
+      <h2 class="section-title">Upcoming Shows</h2>
+      <p class="section-sub">Where to catch the band next.</p>
+
+      <div class="cal-card" id="calendar"></div>
+    </section>
+  </main>
+
+  <!-- ========================== CONTACT ========================== -->
+  <footer class="contact">
+    <p class="eyebrow">Book the band</p>
+    <div class="contact-lines">
+      <a href="tel:+16364567426">
+        <span class="label">Call Steve</span>
+        (636) 456-7426
+      </a>
+      <a href="mailto:dave@mojones.live">
+        <span class="label">Email</span>
+        dave@mojones.live
+      </a>
+    </div>
+    <p class="copyright">&copy; <span id="year"></span> MoJones &middot; St. Louis, MO</p>
+  </footer>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    /* =================================================================
+       GOOGLE CALENDAR CONFIG
+       -----------------------------------------------------------------
+       Replace CALENDAR_ID with your real shows-calendar ID to go live.
+       Find it in Google Calendar:
+         Settings  ->  (your calendar)  ->  "Integrate calendar"
+                   ->  copy the "Calendar ID"  (looks like
+                       xxxxxxxx@group.calendar.google.com)
+       Also make the calendar PUBLIC:
+         Settings -> Access permissions -> "Make available to public"
+                  -> "See all event details".
+       ================================================================= */
+    const CALENDAR_ID = "REPLACE_WITH_YOUR_CALENDAR_ID@group.calendar.google.com";
+    const TIME_ZONE   = "America/Chicago"; // St. Louis = US Central
+
+    /* ---- Read-only Google Calendar iframe embed (current method) ---- */
+    (function renderCalendarEmbed() {
+      const mount = document.getElementById("calendar");
+      const isPlaceholder = CALENDAR_ID.startsWith("REPLACE_WITH_");
+
+      if (isPlaceholder) {
+        // Friendly placeholder so the page looks finished until the
+        // real calendar is connected. Delete-proof: it disappears on
+        // its own the moment a real CALENDAR_ID is set above.
+        mount.innerHTML =
+          '<div class="cal-placeholder">' +
+            '<span class="dot"></span>' +
+            '<h3>Shows calendar coming soon</h3>' +
+            '<p>Once the Google Calendar is connected, every booked ' +
+            'show will appear here automatically.</p>' +
+            '<p style="margin-top:14px;font-size:.85rem;">' +
+            'Developer note: set <code>CALENDAR_ID</code> in index.html.</p>' +
+          '</div>';
+        return;
+      }
+
+      const params = new URLSearchParams({
+        src: CALENDAR_ID,
+        ctz: TIME_ZONE,
+        mode: "AGENDA",     // list of upcoming shows (use "MONTH" for grid)
+        showTitle: "0",
+        showPrint: "0",
+        showTabs: "0",
+        showCalendars: "0",
+        showTz: "0",
+        bgcolor: "#1f1813"
+      });
+
+      const iframe = document.createElement("iframe");
+      iframe.title = "MoJones upcoming shows";
+      iframe.src = "https://calendar.google.com/calendar/embed?" + params.toString();
+      iframe.width = "100%";
+      iframe.height = "600";
+      iframe.loading = "lazy";
+      iframe.setAttribute("frameborder", "0");
+      iframe.setAttribute("scrolling", "no");
+      mount.appendChild(iframe);
+    })();
+
+    /* =================================================================
+       OPTIONAL — CUSTOM "UPCOMING SHOWS" LIST via the Google Calendar API
+       -----------------------------------------------------------------
+       Prefer your own styled list instead of Google's iframe? Use this.
+       It pulls events as JSON and renders them however you like.
+
+       Setup:
+         1. Make the calendar PUBLIC (see note above).
+         2. Get a free API key:
+              https://console.cloud.google.com  ->  enable
+              "Google Calendar API"  ->  Credentials  ->  "Create API key".
+              Restrict the key to the Calendar API + your domain.
+         3. Paste the key into API_KEY below.
+         4. Delete / comment out the renderCalendarEmbed() call above,
+            then UNCOMMENT this whole block. (Add a list container to the
+            HTML too: <ul id="shows-list" class="shows-list"></ul> inside
+            the .shows section, and style .show / .show-date / etc.)
+
+       const API_KEY = "REPLACE_WITH_YOUR_API_KEY";
+
+       async function loadShows() {
+         const url =
+           "https://www.googleapis.com/calendar/v3/calendars/" +
+           encodeURIComponent(CALENDAR_ID) + "/events" +
+           "?key="        + API_KEY +
+           "&timeMin="    + new Date().toISOString() +
+           "&singleEvents=true" +
+           "&orderBy=startTime" +
+           "&maxResults=25";
+
+         const list = document.getElementById("shows-list");
+         try {
+           const res  = await fetch(url);
+           const data = await res.json();
+
+           if (!data.items || data.items.length === 0) {
+             list.innerHTML =
+               '<li class="no-shows">No shows on the books right now &mdash; check back soon.</li>';
+             return;
+           }
+
+           list.innerHTML = data.items.map(function (ev) {
+             const startRaw = ev.start.dateTime || ev.start.date;
+             const d = new Date(startRaw);
+             const date = d.toLocaleDateString("en-US",
+               { weekday: "short", month: "short", day: "numeric" });
+             const time = ev.start.dateTime
+               ? d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+               : "All day";
+             const meta = [ev.location, time].filter(Boolean).join(" · ");
+             return (
+               '<li class="show">' +
+                 '<span class="show-date">' + date + '</span>' +
+                 '<span class="show-info">' +
+                   '<span class="show-title">' + (ev.summary || "Show") + '</span>' +
+                   '<span class="show-meta">' + meta + '</span>' +
+                 '</span>' +
+               '</li>'
+             );
+           }).join("");
+         } catch (err) {
+           list.innerHTML =
+             '<li class="no-shows">Couldn&rsquo;t load shows right now.</li>';
+         }
+       }
+       loadShows();
+       ================================================================= */
+  </script>
+</body>
+</html>
